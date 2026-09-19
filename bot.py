@@ -1,12 +1,13 @@
 import os
 import logging
-from openai import AsyncOpenAI
 
-from telegram import Update
+from google import genai
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     Application,
     CommandHandler,
     MessageHandler,
+    CallbackQueryHandler,
     ContextTypes,
     filters,
 )
@@ -16,16 +17,21 @@ from telegram.ext import (
 # =========================================================
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "RJteam1").lstrip("@").lower()
 
 if not BOT_TOKEN:
     raise RuntimeError("BOT_TOKEN is missing.")
 
-if not OPENAI_API_KEY:
-    raise RuntimeError("OPENAI_API_KEY is missing.")
+if not GEMINI_API_KEY:
+    raise RuntimeError("GEMINI_API_KEY is missing.")
 
-client = AsyncOpenAI(api_key=OPENAI_API_KEY)
+# Gemini Client
+client = genai.Client(api_key=GEMINI_API_KEY)
+
+# =========================================================
+# LOGGING
+# =========================================================
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -37,49 +43,51 @@ logging.basicConfig(
 # =========================================================
 
 CAPTION_PROMPT = """
-তুমি RJ Team-এর একজন Premium Emotional Social Media Caption Writer।
+তুমি RJ Team-এর Premium AI Emotional Caption Writer।
 
-ব্যবহারকারী খুব ছোট করে কোনো বিষয়, ঘটনা, অনুভূতি, সম্পর্ক,
-স্মৃতি, ভালোবাসা, কষ্ট, সাফল্য, ব্যর্থতা, বন্ধুত্ব, পরিবার,
-ব্যবসা, জীবন, স্বপ্ন বা যেকোনো সাধারণ বিষয় লিখবে।
+ব্যবহারকারী যেকোনো একটি বিষয় খুব ছোট করে লিখবে।
+তুমি সেই বিষয়কে সুন্দর, হৃদয়ছোঁয়া, আবেগপূর্ণ এবং
+social-media friendly caption-এ রূপান্তর করবে।
 
-তোমার কাজ হলো সেই ছোট কথাটাকে সুন্দর, হৃদয়ছোঁয়া এবং
-emotionally engaging social-media caption-এ রূপান্তর করা।
+দুটি আলাদা Caption তৈরি করবে:
+
+1. Facebook Caption
+2. TikTok Caption
 
 নিয়ম:
 
-1. ব্যবহারকারীর মূল অর্থ পরিবর্তন করবে না।
-2. অযথা কোনো তথ্য, নাম, ঘটনা, টাকা, ফোন নম্বর বা দাবি বানাবে না।
-3. ভাষা হবে প্রাকৃতিক, সুন্দর ও আবেগপূর্ণ বাংলা।
-4. প্রয়োজন অনুযায়ী সুন্দর emoji ব্যবহার করবে।
-5. Caption যেন কপি-পেস্ট করে Facebook/TikTok-এ ব্যবহার করা যায়।
-6. Facebook caption একটু বিস্তারিত ও গল্পের মতো হবে।
-7. TikTok caption ছোট, powerful এবং emotional হবে।
-8. প্রতিটি caption-এর শেষে relevant hashtag দেবে।
-9. অতিরিক্ত emoji বা অতিরঞ্জিত ভাষা ব্যবহার করবে না।
-10. বিষয় যদি প্রেমের হয়, romantic/emotional tone ব্যবহার করবে।
-11. বিষয় যদি কষ্টের হয়, sad/deep emotional tone ব্যবহার করবে।
-12. বিষয় যদি সফলতার হয়, inspirational/emotional tone ব্যবহার করবে।
-13. বিষয় যদি পরিবার/মায়ের হয়, warm এবং হৃদয়ছোঁয়া tone ব্যবহার করবে।
-14. বিষয় যদি বন্ধুত্বের হয়, friendship/emotional tone ব্যবহার করবে।
-15. বিষয় যদি ব্যবসা বা RJ Team সম্পর্কিত হয়, premium professional tone রাখবে।
+• ব্যবহারকারীর মূল বক্তব্য ঠিক রাখবে।
+• অযথা কোনো তথ্য বানাবে না।
+• ভাষা হবে সুন্দর, প্রাকৃতিক ও আবেগপূর্ণ বাংলা।
+• প্রয়োজন অনুযায়ী সুন্দর emoji ব্যবহার করবে।
+• Facebook caption একটু বিস্তারিত হবে।
+• TikTok caption ছোট, catchy এবং emotional হবে।
+• প্রতিটির শেষে 5-10টি relevant hashtag দেবে।
+• প্রেমের বিষয় হলে romantic emotional tone।
+• কষ্টের বিষয় হলে deep emotional tone।
+• মা/বাবা/পরিবার হলে হৃদয়ছোঁয়া tone।
+• বন্ধুত্ব হলে warm friendship tone।
+• সফলতা হলে inspirational tone।
+• ব্যবসা/প্রমোশন হলে premium professional tone।
+• একই caption বারবার ব্যবহার করবে না।
+• কোনো fake claim, price, phone number বা link তৈরি করবে না।
 
 OUTPUT FORMAT:
 
 📘 FACEBOOK EMOTIONAL CAPTION
 
-[সুন্দর Facebook caption]
+[Facebook caption]
 
 🏷️ Hashtags:
-[Relevant hashtags]
+[hashtags]
 
 
 🎵 TIKTOK EMOTIONAL CAPTION
 
-[ছোট কিন্তু শক্তিশালী TikTok caption]
+[TikTok caption]
 
 🏷️ Hashtags:
-[Relevant hashtags]
+[hashtags]
 """
 
 # =========================================================
@@ -88,22 +96,31 @@ OUTPUT FORMAT:
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
-    text = (
-        "👑 RJ TEAM EMOTIONAL CAPTION STUDIO\n\n"
-        "💎 Premium AI Caption Generator\n\n"
-        "আপনি শুধু আপনার মনের কথা বা বিষয়টি ছোট করে লিখুন।\n"
-        "আমি সেটাকে সুন্দর, আবেগপূর্ণ ও হৃদয়ছোঁয়া Caption-এ "
-        "রূপান্তর করে দেব। ❤️\n\n"
-        "📘 Facebook Emotional Caption\n"
-        "🎵 TikTok Emotional Caption\n"
-        "🏷️ Relevant Hashtags\n\n"
+    keyboard = [
+        [
+            InlineKeyboardButton("❤️ Emotional Caption", callback_data="emotional")
+        ],
+        [
+            InlineKeyboardButton("📘 Facebook", callback_data="facebook"),
+            InlineKeyboardButton("🎵 TikTok", callback_data="tiktok"),
+        ],
+        [
+            InlineKeyboardButton("👑 Admin Panel", callback_data="admin"),
+        ],
+    ]
+
+    await update.message.reply_text(
+        "👑 RJ TEAM AI CAPTION STUDIO\n\n"
+        "💎 Premium Emotional Caption Generator\n\n"
+        "আপনি শুধু আপনার বিষয়টি ছোট করে লিখুন।\n"
+        "আমি সেটাকে সুন্দর ও হৃদয়ছোঁয়া Caption বানিয়ে দেব। ❤️\n\n"
+        "📘 Facebook Caption\n"
+        "🎵 TikTok Caption\n"
+        "🏷️ Smart Hashtags\n\n"
         "✍️ উদাহরণ:\n"
-        "“মাকে হারানোর পর বুঝেছি, পৃথিবীতে মায়ের মতো আপন কেউ নেই।”\n\n"
-        "তারপর শুধু Send করুন। ❤️"
+        "মা পাশে না থাকলে পৃথিবীটা অনেক ফাঁকা লাগে।",
+        reply_markup=InlineKeyboardMarkup(keyboard),
     )
-
-    await update.message.reply_text(text)
-
 
 # =========================================================
 # HELP
@@ -114,17 +131,16 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "📝 RJ TEAM CAPTION HELP\n\n"
         "আপনার বিষয়টি ছোট করে লিখে Send করুন।\n\n"
-        "❤️ প্রেম / অনুভূতি\n"
-        "💔 কষ্ট / বিচ্ছেদ\n"
-        "👩‍👦 মা / পরিবার\n"
-        "🤝 বন্ধুত্ব\n"
-        "🌱 জীবন / বাস্তবতা\n"
+        "❤️ Emotional\n"
+        "💔 Sad\n"
+        "💕 Love\n"
+        "👩‍👦 Family\n"
+        "🤝 Friendship\n"
         "🔥 Motivation\n"
-        "💼 Business / Promotion\n"
-        "🚀 RJ Team / Website\n\n"
-        "বট নিজে থেকে Facebook ও TikTok-এর জন্য আলাদা Caption তৈরি করবে।"
+        "💼 Business\n"
+        "🚀 Promotion\n\n"
+        "AI নিজে থেকে Facebook ও TikTok-এর জন্য সুন্দর Caption তৈরি করবে।"
     )
-
 
 # =========================================================
 # ADMIN PANEL
@@ -136,35 +152,81 @@ async def panel(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if username != ADMIN_USERNAME:
         await update.message.reply_text(
-            "⛔ এই Admin Panel শুধুমাত্র অনুমোদিত Admin-এর জন্য।"
+            "⛔ এই Admin Panel শুধুমাত্র Admin-এর জন্য।"
         )
         return
 
     await update.message.reply_text(
         "👑 RJ TEAM ADMIN PANEL\n\n"
-        "🟢 Bot Status: ONLINE\n"
-        "🤖 AI Caption: ACTIVE\n"
-        "❤️ Emotional Mode: ACTIVE\n"
+        "🟢 Bot: ONLINE\n"
+        "🤖 Gemini AI: ACTIVE\n"
+        "❤️ Emotional Caption: ACTIVE\n"
         "📘 Facebook Mode: ACTIVE\n"
         "🎵 TikTok Mode: ACTIVE\n"
         "🔐 Admin: @" + ADMIN_USERNAME
     )
 
+# =========================================================
+# BUTTONS
+# =========================================================
+
+async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+    query = update.callback_query
+    await query.answer()
+
+    if query.data == "emotional":
+
+        await query.message.reply_text(
+            "❤️ Emotional Caption Mode Active\n\n"
+            "এখন আপনার বিষয়টি ছোট করে লিখুন।"
+        )
+
+    elif query.data == "facebook":
+
+        await query.message.reply_text(
+            "📘 Facebook Caption Mode\n\n"
+            "আপনার বিষয়টি Send করুন।"
+        )
+
+    elif query.data == "tiktok":
+
+        await query.message.reply_text(
+            "🎵 TikTok Caption Mode\n\n"
+            "আপনার বিষয়টি Send করুন।"
+        )
+
+    elif query.data == "admin":
+
+        username = (query.from_user.username or "").lower()
+
+        if username != ADMIN_USERNAME:
+            await query.message.reply_text(
+                "⛔ আপনি Admin নন।"
+            )
+            return
+
+        await query.message.reply_text(
+            "👑 ADMIN PANEL\n\n"
+            "🟢 Bot Online\n"
+            "🤖 Gemini AI Active\n"
+            "❤️ Emotional Mode Active"
+        )
 
 # =========================================================
-# AI CAPTION GENERATOR
+# GEMINI AI
 # =========================================================
 
-async def generate_caption(topic: str) -> str:
+async def generate_caption(topic: str):
 
-    response = await client.responses.create(
-        model="gpt-5-mini",
-        instructions=CAPTION_PROMPT,
-        input=topic,
+    prompt = CAPTION_PROMPT + "\n\nUSER TOPIC:\n" + topic
+
+    response = client.models.generate_content(
+        model="gemini-2.5-flash-lite",
+        contents=prompt,
     )
 
-    return response.output_text.strip()
-
+    return response.text.strip()
 
 # =========================================================
 # MESSAGE HANDLER
@@ -181,8 +243,8 @@ async def handle_message(
         return
 
     waiting = await update.message.reply_text(
-        "❤️ আপনার কথাটাকে সুন্দর করে সাজাচ্ছি...\n"
-        "✍️ Emotional Caption তৈরি হচ্ছে..."
+        "✍️ আপনার কথাটাকে সুন্দর করে সাজাচ্ছি...\n"
+        "❤️ Emotional Caption তৈরি হচ্ছে..."
     )
 
     try:
@@ -194,15 +256,14 @@ async def handle_message(
     except Exception as error:
 
         logging.exception(
-            "Caption generation error: %s",
+            "Gemini error: %s",
             error
         )
 
         await waiting.edit_text(
-            "❌ Caption তৈরি করা সম্ভব হচ্ছে না।\n\n"
-            "দয়া করে কিছুক্ষণ পর আবার চেষ্টা করুন।"
+            "❌ Caption তৈরি করা যাচ্ছে না।\n\n"
+            "GEMINI_API_KEY অথবা Gemini API status পরীক্ষা করুন।"
         )
-
 
 # =========================================================
 # MAIN
@@ -230,13 +291,17 @@ def main():
     )
 
     app.add_handler(
+        CallbackQueryHandler(button_handler)
+    )
+
+    app.add_handler(
         MessageHandler(
             filters.TEXT & ~filters.COMMAND,
             handle_message
         )
     )
 
-    print("👑 RJ Team Emotional Caption Bot is running...")
+    print("👑 RJ Team Gemini Caption Bot is running...")
 
     app.run_polling()
 
