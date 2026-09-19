@@ -35,7 +35,10 @@ ADMIN_USERNAME = (
     .lower()
 )
 
-# নতুন Gemini Model
+COMMUNITY_NAME = "RJ Team Bangladesh Hekar Community"
+BOT_NAME = "RJ Emotional AI"
+OWNER_USERNAME = "@RJteam1"
+
 MODEL = "gemini-3.5-flash-lite"
 
 
@@ -103,6 +106,22 @@ def main_keyboard():
                 "⚙️ Admin Panel",
                 callback_data="panel"
             )
+        ],
+        [
+            InlineKeyboardButton(
+                "👑 Owners",
+                callback_data="owners"
+            ),
+            InlineKeyboardButton(
+                "ℹ️ About",
+                callback_data="about"
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                "🧹 Reset",
+                callback_data="reset"
+            )
         ]
     ]
 
@@ -134,8 +153,11 @@ def is_admin(update: Update):
 def create_prompt(topic):
 
     return f"""
-তুমি "RJ Team AI Caption Studio"-এর একজন
+তুমি "{BOT_NAME}"-এর একজন
 professional বাংলা content writer.
+
+তুমি "{COMMUNITY_NAME}"-এর পক্ষ থেকে
+ব্যবহারকারীর একজন বন্ধুর মতো কথা বলবে।
 
 ব্যবহারকারীর দেওয়া বিষয়:
 
@@ -207,13 +229,22 @@ async def start(
     context: ContextTypes.DEFAULT_TYPE
 ):
 
+    # নতুন conversation state
+    context.user_data.clear()
+
     text = (
-        "👑 <b>RJ Team AI Caption Studio</b>\n\n"
+        "🌹 <b>RJ Emotional AI</b>\n\n"
 
-        "🤖 আপনার একটি বিষয় বা ছোট একটি লাইন "
-        "আমাকে পাঠান।\n\n"
+        "🤖 আমি আপনার AI Intelligent Friend।\n"
+        "❤️ আমি <b>RJ Team Bangladesh Hekar Community</b>-এর "
+        "পক্ষ থেকে আপনার বন্ধু হিসেবে থাকতে চাই।\n\n"
 
-        "আমি আপনার জন্য তৈরি করে দেব:\n\n"
+        "এক কথায়—<b>আমি আপনার বন্ধু।</b> 🤝\n\n"
+
+        "আপনি আমাকে যেকোনো SMS বা বিষয় পাঠান।\n"
+        "আপনার SMS-এর অর্থ ও অনুভূতির ওপর নির্ভর করে "
+        "আমি সুন্দর emotional ও social-media friendly "
+        "caption তৈরি করে দেব। 🌸\n\n"
 
         "🌸 Facebook Caption\n"
         "🎵 TikTok Caption\n"
@@ -221,7 +252,7 @@ async def start(
 
         "✍️ উদাহরণ:\n"
         "<i>কিছু মানুষ দূরে চলে গেলেও "
-        "মনে থেকে যায়</i>"
+        "মনে থেকে যায়...</i>"
     )
 
     await update.message.reply_text(
@@ -241,11 +272,14 @@ async def help_command(
 ):
 
     text = (
-        "🆘 <b>RJ Team Help</b>\n\n"
+        "🆘 <b>RJ Emotional AI — Help</b>\n\n"
 
-        "/start — Bot শুরু করুন\n"
-        "/help — Help দেখুন\n"
-        "/panel — Admin Panel\n\n"
+        "/start — 🤖 Bot শুরু করুন\n"
+        "/help — 🆘 Help দেখুন\n"
+        "/panel — ⚙️ Admin Panel\n"
+        "/about — ℹ️ Bot সম্পর্কে জানুন\n"
+        "/owners — 👑 Owner Information\n"
+        "/reset — 🧹 নতুন করে SMS শুরু করুন\n\n"
 
         "📝 যেকোনো বিষয় লিখে পাঠান।\n"
         "AI আপনার জন্য সুন্দর caption তৈরি করবে।\n\n"
@@ -259,7 +293,121 @@ async def help_command(
 
     await update.message.reply_text(
         text,
-        parse_mode="HTML"
+        parse_mode="HTML",
+        reply_markup=main_keyboard()
+    )
+
+
+# =========================================================
+# ABOUT COMMAND
+# =========================================================
+
+async def about(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE
+):
+
+    text = (
+        "🤖 <b>আমি RJ Emotional AI</b>\n\n"
+
+        "🌹 আমি আপনার AI Intelligent Friend।\n\n"
+
+        "<b>RJ Team Bangladesh Hekar Community</b>-এর "
+        "পক্ষ থেকে আমি আপনার বন্ধু হিসেবে থাকতে চাই। ❤️\n\n"
+
+        "এক কথায়—<b>আমি আপনার বন্ধু।</b> 🤝\n\n"
+
+        "আপনি আমাকে যে SMS দেবেন, "
+        "আপনার SMS-এর অর্থ ও অনুভূতির ওপর নির্ভর করে "
+        "আমি সুন্দর, আবেগপূর্ণ ও মানানসই Caption তৈরি করে দেব। 💔🌹\n\n"
+
+        "✨ আপনার অনুভূতি → আমার সুন্দর Caption\n\n"
+
+        "🌸 Facebook Caption\n"
+        "🎵 TikTok Caption\n"
+        "#️⃣ Hashtags\n\n"
+
+        "<b>RJ Emotional AI — আপনার অনুভূতির ডিজিটাল বন্ধু।</b> 🤖❤️"
+    )
+
+    await update.message.reply_text(
+        text,
+        parse_mode="HTML",
+        reply_markup=main_keyboard()
+    )
+
+
+# =========================================================
+# OWNERS COMMAND
+# =========================================================
+
+async def owners(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE
+):
+
+    text = (
+        "👑 <b>RJ Team Information</b>\n\n"
+
+        "🌹 <b>Community:</b>\n"
+        "RJ Team Bangladesh Hekar Community\n\n"
+
+        "👑 <b>Owner:</b> @RJteam1\n\n"
+
+        "🤖 <b>Bot:</b> RJ Emotional AI\n\n"
+
+        "📩 Owner-এর সাথে যোগাযোগ করতে নিচের "
+        "button-এ চাপ দিন।"
+    )
+
+    keyboard = [
+        [
+            InlineKeyboardButton(
+                "👑 Owner @RJteam1",
+                url="https://t.me/RJteam1"
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                "🏠 Main Menu",
+                callback_data="home"
+            )
+        ]
+    ]
+
+    await update.message.reply_text(
+        text,
+        parse_mode="HTML",
+        reply_markup=InlineKeyboardMarkup(keyboard)
+    )
+
+
+# =========================================================
+# RESET COMMAND
+# =========================================================
+
+async def reset(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE
+):
+
+    context.user_data.clear()
+
+    text = (
+        "🧹 <b>Reset সম্পন্ন হয়েছে!</b>\n\n"
+
+        "আগের conversation state পরিষ্কার করা হয়েছে।\n\n"
+
+        "🤖 এখন থেকে আমরা নতুন করে SMS শুরু করতে পারি। ❤️\n\n"
+
+        "✍️ আপনার নতুন SMS বা বিষয়টি পাঠান।\n"
+        "আমি সেটার অনুভূতি বুঝে সুন্দর caption তৈরি করে দেব। 🌹"
+    )
+
+    await update.message.reply_text(
+        text,
+        parse_mode="HTML",
+        reply_markup=main_keyboard()
     )
 
 
@@ -290,7 +438,10 @@ async def panel(
         "✅ Caption System Active\n"
         "✅ Facebook Caption Active\n"
         "✅ TikTok Caption Active\n"
-        "✅ Emotional Caption Active"
+        "✅ Emotional Caption Active\n"
+        "✅ Reset Command Active\n"
+        "✅ Owners Command Active\n"
+        "✅ About Command Active"
     )
 
     await update.message.reply_text(
@@ -313,6 +464,98 @@ async def button_handler(
     await query.answer()
 
     # -----------------------------
+    # HOME
+    # -----------------------------
+
+    if query.data == "home":
+
+        await query.message.reply_text(
+            "🏠 <b>Main Menu</b>\n\n"
+            "আপনার বিষয় বা SMS পাঠান। ❤️",
+            parse_mode="HTML",
+            reply_markup=main_keyboard()
+        )
+
+        return
+
+    # -----------------------------
+    # RESET
+    # -----------------------------
+
+    if query.data == "reset":
+
+        context.user_data.clear()
+
+        await query.message.reply_text(
+            "🧹 <b>Reset সম্পন্ন হয়েছে!</b>\n\n"
+            "আগের conversation state পরিষ্কার হয়েছে।\n"
+            "এখন নতুন করে SMS পাঠান। 🌹",
+            parse_mode="HTML",
+            reply_markup=main_keyboard()
+        )
+
+        return
+
+    # -----------------------------
+    # OWNERS
+    # -----------------------------
+
+    if query.data == "owners":
+
+        keyboard = [
+            [
+                InlineKeyboardButton(
+                    "👑 Owner @RJteam1",
+                    url="https://t.me/RJteam1"
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    "🏠 Main Menu",
+                    callback_data="home"
+                )
+            ]
+        ]
+
+        await query.message.reply_text(
+            "👑 <b>RJ Team Information</b>\n\n"
+            "🌹 Community: "
+            "<b>RJ Team Bangladesh Hekar Community</b>\n\n"
+            "👑 Owner: @RJteam1\n\n"
+            "নিচের button-এ চাপ দিলে Owner-এর Telegram profile-এ যাবে।",
+            parse_mode="HTML",
+            reply_markup=InlineKeyboardMarkup(keyboard)
+        )
+
+        return
+
+    # -----------------------------
+    # ABOUT
+    # -----------------------------
+
+    if query.data == "about":
+
+        await query.message.reply_text(
+            "🤖 <b>আমি RJ Emotional AI</b>\n\n"
+            "🌹 আমি আপনার AI Intelligent Friend।\n\n"
+            "<b>RJ Team Bangladesh Hekar Community</b>-এর "
+            "পক্ষ থেকে আমি আপনার বন্ধু হিসেবে থাকতে চাই। ❤️\n\n"
+            "এক কথায়—<b>আমি আপনার বন্ধু।</b> 🤝\n\n"
+            "আপনি আমাকে যে SMS দেবেন, "
+            "আপনার SMS-এর অর্থ ও অনুভূতির ওপর নির্ভর করে "
+            "আমি সুন্দর, আবেগপূর্ণ ও মানানসই Caption তৈরি করে দেব। 💔🌹\n\n"
+            "✨ আপনার অনুভূতি → আমার সুন্দর Caption\n\n"
+            "🌸 Facebook Caption\n"
+            "🎵 TikTok Caption\n"
+            "#️⃣ Hashtags\n\n"
+            "<b>RJ Emotional AI — আপনার অনুভূতির ডিজিটাল বন্ধু।</b> 🤖❤️",
+            parse_mode="HTML",
+            reply_markup=main_keyboard()
+        )
+
+        return
+
+    # -----------------------------
     # ADMIN PANEL
     # -----------------------------
 
@@ -327,10 +570,11 @@ async def button_handler(
             return
 
         await query.message.reply_text(
-            f"👑 RJ Team Admin Panel\n\n"
+            f"👑 <b>RJ Team Admin Panel</b>\n\n"
             f"🟢 Status: Online\n"
-            f"🤖 Model: {MODEL}\n"
-            f"👤 Admin: @{ADMIN_USERNAME}"
+            f"🤖 Model: <code>{MODEL}</code>\n"
+            f"👤 Admin: @{ADMIN_USERNAME}",
+            parse_mode="HTML"
         )
 
         return
@@ -342,11 +586,13 @@ async def button_handler(
     if query.data == "emotional":
 
         await query.message.reply_text(
-            "💔 যে বিষয় নিয়ে emotional caption চান,\n"
+            "💔 <b>Emotional Caption</b>\n\n"
+            "যে বিষয় নিয়ে emotional caption চান,\n"
             "সেটি লিখে পাঠান।\n\n"
             "উদাহরণ:\n"
             "কিছু মানুষ হারিয়ে গেলেও "
-            "তাদের স্মৃতি থেকে যায়।"
+            "তাদের স্মৃতি থেকে যায়।",
+            parse_mode="HTML"
         )
 
         return
@@ -358,8 +604,9 @@ async def button_handler(
     if query.data == "facebook":
 
         await query.message.reply_text(
-            "📘 Facebook Caption-এর জন্য "
-            "আপনার বিষয় লিখে পাঠান।"
+            "📘 <b>Facebook Caption</b>\n\n"
+            "আপনার বিষয় লিখে পাঠান।",
+            parse_mode="HTML"
         )
 
         return
@@ -371,8 +618,9 @@ async def button_handler(
     if query.data == "tiktok":
 
         await query.message.reply_text(
-            "🎵 TikTok Caption-এর জন্য "
-            "আপনার বিষয় লিখে পাঠান।"
+            "🎵 <b>TikTok Caption</b>\n\n"
+            "আপনার বিষয় লিখে পাঠান।",
+            parse_mode="HTML"
         )
 
         return
@@ -386,6 +634,9 @@ async def text_handler(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE
 ):
+
+    if not update.message:
+        return
 
     topic = (
         update.message.text or ""
@@ -506,7 +757,10 @@ def main():
         .build()
     )
 
-    # Commands
+    # =====================================================
+    # COMMANDS
+    # =====================================================
+
     application.add_handler(
         CommandHandler(
             "start",
@@ -528,14 +782,41 @@ def main():
         )
     )
 
-    # Buttons
+    application.add_handler(
+        CommandHandler(
+            "about",
+            about
+        )
+    )
+
+    application.add_handler(
+        CommandHandler(
+            "owners",
+            owners
+        )
+    )
+
+    application.add_handler(
+        CommandHandler(
+            "reset",
+            reset
+        )
+    )
+
+    # =====================================================
+    # BUTTONS
+    # =====================================================
+
     application.add_handler(
         CallbackQueryHandler(
             button_handler
         )
     )
 
-    # Normal messages
+    # =====================================================
+    # NORMAL TEXT
+    # =====================================================
+
     application.add_handler(
         MessageHandler(
             filters.TEXT & ~filters.COMMAND,
@@ -543,13 +824,16 @@ def main():
         )
     )
 
-    # Error handler
+    # =====================================================
+    # ERROR HANDLER
+    # =====================================================
+
     application.add_error_handler(
         error_handler
     )
 
     logger.info(
-        "RJ Team AI Caption Studio started."
+        "RJ Emotional AI started."
     )
 
     application.run_polling(
